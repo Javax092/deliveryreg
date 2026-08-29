@@ -1,0 +1,655 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InternalRole {
+  OWNER
+  MANAGER
+  ATTENDANT
+  DELIVERY
+}
+
+enum MeasurementType {
+  WEIGHT
+  UNIT
+  PACKAGE
+  VOLUME
+  BOX
+}
+
+enum BaseUnit {
+  GRAM
+  UNIT
+  PACKAGE
+  MILLILITER
+  BOX
+}
+
+enum PriceBasis {
+  PER_BASE_UNIT
+  PER_PACKAGE
+}
+
+enum OrderStatus {
+  CREATED
+  ACCEPTED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum FulfillmentType {
+  PICKUP
+  DELIVERY
+}
+
+enum SalesChannel {
+  DIGITAL
+  POS
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  DEBIT_CARD
+  CREDIT_CARD
+}
+
+enum DeliveryStatus {
+  ASSIGNED
+  PICKED_UP
+  ON_ROUTE
+  DELIVERED
+  FAILED
+}
+
+enum StockMovementType {
+  PURCHASE
+  SALE
+  LOSS
+  ADJUSTMENT
+  TRANSFER
+  RETURN
+}
+
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  SUPPLY
+  WITHDRAWAL
+}
+
+enum AuditAction {
+  PRICE_CHANGED
+  STOCK_ADJUSTED
+  ORDER_CANCELLED
+  WEIGHT_CONFIRMED
+  ADMIN_CHANGED
+  PERMISSION_CHANGED
+  STOCK_TRANSFERRED
+  PAYMENT_RECORDED
+  ORDER_COMPLETED
+  DELIVERY_ASSIGNED
+  DELIVERY_REASSIGNED
+  CASH_SESSION_OPENED
+  CASH_SUPPLY_CREATED
+  CASH_WITHDRAWAL_CREATED
+  CASH_SESSION_CLOSED
+}
+
+enum AnalyticsEventType {
+  catalog_viewed
+  product_viewed
+  product_added
+  cart_viewed
+  checkout_started
+  lead_created
+  order_created
+  order_completed
+}
+
+model Business {
+  id        String   @id @default(cuid())
+  name      String
+  timezone  String   @default("America/Manaus")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches       Branch[]
+  users          User[]
+  customers      Customer[]
+  addresses      Address[]
+  deliveryZones  DeliveryZone[]
+  deliveries     Delivery[]
+  leadSources    LeadSource[]
+  leads          Lead[]
+  analyticsEvents AnalyticsEvent[]
+  productCategories ProductCategory[]
+  products       Product[]
+  productPrices  ProductPrice[]
+  orders         Order[]
+  stockMovements StockMovement[]
+  cashSessions   CashSession[]
+  cashMovements  CashMovement[]
+  auditLogs      AuditLog[]
+  idempotencyKeys IdempotencyKey[]
+}
+
+model Branch {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  users          UserBranchAccess[]
+  productAvailability ProductBranchAvailability[]
+  deliveryZones DeliveryZone[]
+  leadSources    LeadSource[]
+  leads          Lead[]
+  analyticsEvents AnalyticsEvent[]
+  orders         Order[]
+  stockMovements StockMovement[]
+  cashSessions   CashSession[]
+  cashMovements  CashMovement[]
+  auditLogs      AuditLog[]
+
+  @@unique([businessId, name])
+  @@index([businessId])
+}
+
+model User {
+  id           String       @id @default(cuid())
+  businessId   String
+  email        String
+  name         String
+  passwordHash String
+  role         InternalRole
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  business       Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branchAccesses UserBranchAccess[]
+  sessions       Session[]
+  auditLogs      AuditLog[]         @relation("AuditActor")
+  ordersCreated  Order[]            @relation("OrderCreatedBy")
+  stockMovements StockMovement[]    @relation("StockActor")
+  cashSessionsOpened CashSession[]  @relation("CashSessionOpenedBy")
+  cashSessionsClosed CashSession[]  @relation("CashSessionClosedBy")
+  cashMovements CashMovement[]      @relation("CashMovementActor")
+
+  @@unique([businessId, email])
+  @@index([businessId, role])
+}
+
+model UserBranchAccess {
+  userId    String
+  branchId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([userId, branchId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  phone      String?
+  normalizedPhone String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  orders   Order[]
+  leads    Lead[]
+  addresses Address[]
+
+  @@unique([businessId, normalizedPhone])
+  @@index([businessId])
+}
+
+model Address {
+  id           String   @id @default(cuid())
+  businessId   String
+  customerId   String
+  label        String?
+  street       String
+  number       String
+  neighborhood String
+  reference    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  deliveries Delivery[]
+
+  @@index([businessId, customerId])
+  @@index([businessId, neighborhood])
+}
+
+model DeliveryZone {
+  id                String   @id @default(cuid())
+  businessId        String
+  branchId          String
+  name              String
+  normalizedName    String
+  feeCents          Int
+  minimumOrderCents Int
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, branchId, normalizedName])
+  @@index([businessId, branchId, isActive])
+}
+
+model LeadSource {
+  id          String   @id @default(cuid())
+  businessId  String
+  branchId    String?
+  code        String
+  label       String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch   Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  leads    Lead[]
+  orders   Order[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@unique([businessId, code])
+  @@index([businessId, branchId, isActive])
+}
+
+model Lead {
+  id             String   @id @default(cuid())
+  businessId     String
+  branchId       String?
+  leadSourceId   String?
+  customerId     String?
+  name           String
+  whatsapp       String
+  normalizedPhone String
+  firstSeenAt    DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch     Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  leadSource LeadSource? @relation(fields: [leadSourceId], references: [id], onDelete: SetNull)
+  customer   Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  orders     Order[]
+
+  @@unique([businessId, normalizedPhone])
+  @@index([businessId, branchId, createdAt])
+  @@index([businessId, leadSourceId])
+}
+
+model Product {
+  id                   String          @id @default(cuid())
+  businessId           String
+  categoryId           String?
+  name                 String
+  slug                 String
+  description          String?
+  imageUrl             String?
+  measurementType      MeasurementType
+  baseUnit             BaseUnit
+  sellingIncrement     Int
+  minimumOrderQuantity Int
+  isActive             Boolean         @default(true)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  business       Business                    @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  category       ProductCategory?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  prices         ProductPrice[]
+  availability   ProductBranchAvailability[]
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
+
+  @@unique([businessId, slug])
+  @@index([businessId, isActive])
+  @@index([businessId, categoryId])
+}
+
+model ProductCategory {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  products Product[]
+
+  @@unique([businessId, slug])
+  @@index([businessId, isActive, sortOrder])
+}
+
+model ProductPrice {
+  id            String     @id @default(cuid())
+  businessId    String
+  productId     String
+  priceCents    Int
+  basisQuantity Int
+  basisUnit     BaseUnit
+  priceBasis    PriceBasis @default(PER_BASE_UNIT)
+  startsAt      DateTime   @default(now())
+  endsAt        DateTime?
+  createdAt     DateTime   @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, productId, startsAt])
+}
+
+model ProductBranchAvailability {
+  id         String   @id @default(cuid())
+  businessId String
+  branchId   String
+  productId  String
+  isAvailable Boolean @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, branchId, productId])
+  @@index([businessId, branchId, isAvailable])
+  @@index([businessId, productId])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  businessId      String
+  branchId        String
+  leadId          String?
+  leadSourceId    String?
+  customerId      String?
+  fulfillmentType FulfillmentType @default(PICKUP)
+  salesChannel    SalesChannel @default(DIGITAL)
+  status          OrderStatus @default(CREATED)
+  subtotalCents   Int         @default(0)
+  totalCents      Int         @default(0)
+  createdByUserId String?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  business      Business    @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch        Branch      @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  lead          Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  leadSource    LeadSource? @relation(fields: [leadSourceId], references: [id], onDelete: SetNull)
+  customer      Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdByUser User?       @relation("OrderCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  payments      Payment[]
+  delivery      Delivery?
+
+  @@index([businessId, branchId, status])
+  @@index([businessId, createdAt])
+  @@index([businessId, customerId, createdAt])
+}
+
+model Delivery {
+  id             String         @id @default(cuid())
+  businessId     String
+  branchId       String
+  orderId        String         @unique
+  addressId      String
+  assignedUserId String?
+  status         DeliveryStatus @default(ASSIGNED)
+  feeCents       Int
+  assignedAt     DateTime?
+  pickedUpAt     DateTime?
+  onRouteAt      DateTime?
+  deliveredAt    DateTime?
+  failedAt       DateTime?
+  failureReason  String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  address  Address  @relation(fields: [addressId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, branchId, status])
+  @@index([businessId, assignedUserId, status])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  businessId  String
+  branchId    String
+  orderId     String
+  cashSessionId String?
+  actorUserId String?
+  method      PaymentMethod
+  amountCents Int
+  createdAt   DateTime      @default(now())
+
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  cashSession CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, branchId, createdAt])
+  @@index([businessId, orderId])
+  @@index([businessId, cashSessionId])
+}
+
+model CashSession {
+  id                 String            @id @default(cuid())
+  businessId         String
+  branchId           String
+  openedByUserId     String
+  openedAt           DateTime          @default(now())
+  openingAmountCents Int
+  status             CashSessionStatus @default(OPEN)
+  closedByUserId     String?
+  closedAt           DateTime?
+  expectedCashCents  Int?
+  countedCashCents   Int?
+  differenceCents    Int?
+  closingNote        String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch        Branch         @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  openedByUser  User           @relation("CashSessionOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
+  closedByUser  User?          @relation("CashSessionClosedBy", fields: [closedByUserId], references: [id], onDelete: Restrict)
+  movements     CashMovement[]
+  payments      Payment[]
+
+  @@index([businessId, branchId, status])
+  @@index([businessId, openedAt])
+  @@index([businessId, closedAt])
+}
+
+model CashMovement {
+  id            String           @id @default(cuid())
+  businessId    String
+  branchId      String
+  cashSessionId String
+  actorUserId   String
+  type          CashMovementType
+  amountCents   Int
+  reason        String
+  createdAt     DateTime         @default(now())
+
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch      Branch      @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  cashSession CashSession @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  actor       User        @relation("CashMovementActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, branchId, createdAt])
+  @@index([businessId, cashSessionId, createdAt])
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(cuid())
+  businessId  String
+  orderId     String
+  actorUserId String?
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  reason      String?
+  createdAt   DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, orderId, createdAt])
+}
+
+model OrderItem {
+  id                         String          @id @default(cuid())
+  businessId                 String
+  orderId                    String
+  productId                  String
+  productNameSnapshot        String
+  measurementTypeSnapshot    MeasurementType
+  requestedQuantity          Int
+  actualQuantity             Int?
+  priceCentsSnapshot         Int
+  priceBasisQuantitySnapshot Int
+  priceBasisUnitSnapshot     BaseUnit
+  estimatedAmountCents       Int
+  finalAmountCents           Int?
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, orderId])
+  @@index([businessId, productId])
+}
+
+model StockMovement {
+  id                String            @id @default(cuid())
+  businessId        String
+  branchId          String
+  productId         String
+  actorUserId       String?
+  type              StockMovementType
+  quantityDelta     Int
+  reason            String
+  sourceType        String?
+  sourceId          String?
+  idempotencyKeyId  String?
+  metadata          Json?
+  createdAt         DateTime          @default(now())
+
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch         Branch          @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  actorUser      User?           @relation("StockActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  idempotencyKey IdempotencyKey? @relation(fields: [idempotencyKeyId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, branchId, productId, createdAt])
+  @@index([businessId, sourceType, sourceId])
+}
+
+model IdempotencyKey {
+  id             String   @id @default(cuid())
+  businessId     String
+  key            String
+  operation      String
+  requestHash    String
+  responseJson   Json?
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  stockMovements StockMovement[]
+
+  @@unique([businessId, operation, key])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  businessId String
+  branchId   String?
+  actorUserId String?
+  action     AuditAction
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  actorUser User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, entityType, entityId])
+  @@index([businessId, createdAt])
+}
+
+model AnalyticsEvent {
+  id            String             @id @default(cuid())
+  businessId    String
+  branchId      String?
+  leadSourceId  String?
+  anonymousId   String
+  eventType     AnalyticsEventType
+  productId     String?
+  orderId       String?
+  occurredAt    DateTime           @default(now())
+  metadata      Json?
+
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch     Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  leadSource LeadSource? @relation(fields: [leadSourceId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, eventType, occurredAt])
+  @@index([businessId, branchId, occurredAt])
+  @@index([businessId, leadSourceId, occurredAt])
+  @@index([businessId, anonymousId, occurredAt])
+}

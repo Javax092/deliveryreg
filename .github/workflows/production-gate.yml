@@ -1,0 +1,103 @@
+name: Production Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: production-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: postgresql://deliveryreg:deliveryreg@localhost:55438/deliveryreg_e2e?schema=public
+  E2E_DATABASE_URL: postgresql://deliveryreg:deliveryreg@localhost:55438/deliveryreg_e2e?schema=public
+  AUTH_SECRET: e2e-auth-secret-with-more-than-thirty-two-characters
+  BUSINESS_TIMEZONE: America/Manaus
+
+jobs:
+  production-gate:
+    name: Production Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: deliveryreg
+          POSTGRES_PASSWORD: deliveryreg
+        ports:
+          - 55438:5432
+        options: >-
+          --health-cmd "pg_isready -U deliveryreg -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Prepare E2E database
+        run: npm run test:e2e:setup
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit and contract tests
+        run: npm test
+
+      - name: PostgreSQL integration tests
+        run: npm run test:postgres
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Build
+        run: npm run build
+
+      - name: Playwright E2E
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload E2E failure artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
