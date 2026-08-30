@@ -53,6 +53,10 @@ export function AdminActionForm({
           return;
         }
 
+        if (!formRef.current.reportValidity()) {
+          return;
+        }
+
         const formData = new FormData(formRef.current);
         setResult(null);
         startTransition(async () => {

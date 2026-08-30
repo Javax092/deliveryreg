@@ -27,6 +27,29 @@ const productAdminSchema = z.object({
   availableBranchIds: z.array(z.string()).min(1)
 });
 
+const productAdminValidationMessages = {
+  name: "Informe um nome válido.",
+  description: "Informe uma descrição com até 500 caracteres.",
+  categoryId: "Selecione uma categoria.",
+  imageUrl: "Informe uma URL de imagem válida.",
+  measurementType: "Selecione a unidade de venda.",
+  price: "Informe um preço válido.",
+  minimumOrderQuantity: "Informe uma quantidade mínima válida.",
+  sellingIncrement: "Informe um incremento válido.",
+  availableBranchIds: "Selecione pelo menos uma unidade disponível."
+} as const;
+
+type ProductAdminValidationField = keyof typeof productAdminValidationMessages;
+
+type ProductAdminValidationDetails = {
+  field: ProductAdminValidationField;
+};
+
+const productWriteTransactionOptions = {
+  maxWait: 5_000,
+  timeout: 15_000
+};
+
 export type ProductAdminInput = z.infer<typeof productAdminSchema>;
 
 const defaultsByMeasurement: Record<
@@ -41,7 +64,7 @@ const defaultsByMeasurement: Record<
 };
 
 export function parseProductAdminForm(formData: FormData): ProductAdminInput {
-  const result = productAdminSchema.safeParse({
+  const rawInput = {
     productId: formData.get("productId") ? String(formData.get("productId")) : undefined,
     name: String(formData.get("name") ?? ""),
     description: String(formData.get("description") ?? ""),
@@ -53,15 +76,34 @@ export function parseProductAdminForm(formData: FormData): ProductAdminInput {
     sellingIncrement: Number(formData.get("sellingIncrement")),
     isActive: formData.get("isActive") === "on",
     availableBranchIds: formData.getAll("availableBranchIds").map(String)
-  });
+  };
+
+  const result = productAdminSchema.safeParse(rawInput);
 
   if (!result.success) {
+    logProductAdminValidationFailure(rawInput, result.error.issues);
+    const field = getProductAdminValidationField(result.error.issues[0]?.path[0]);
     throw new AppError("VALIDATION_ERROR", {
-      details: result.error.flatten()
+      details: {
+        ...result.error.flatten(),
+        ...(field ? { field } : {})
+      }
     });
   }
 
   return result.data;
+}
+
+export function getProductAdminValidationMessage(error: unknown): string | undefined {
+  if (!(error instanceof AppError) || error.code !== "VALIDATION_ERROR") {
+    return undefined;
+  }
+
+  const details = error.details;
+  const field =
+    isProductAdminValidationDetails(details) ? details.field : getProductAdminValidationFieldFromMessage(error.message);
+
+  return field ? productAdminValidationMessages[field] : undefined;
 }
 
 export async function createCommercialProduct(input: {
@@ -235,23 +277,45 @@ export async function updateCommercialProduct(input: {
       });
     }
 
-    for (const branch of data.allBranches) {
-      await tx.productBranchAvailability.upsert({
+    const availableBranchIds = new Set(data.availableBranchIds);
+    const unavailableBranchIds = data.allBranches
+      .map((branch) => branch.id)
+      .filter((branchId) => !availableBranchIds.has(branchId));
+
+    await tx.productBranchAvailability.createMany({
+      data: data.allBranches.map((branch) => ({
+        businessId: input.context.businessId,
+        branchId: branch.id,
+        productId: current.id,
+        isAvailable: availableBranchIds.has(branch.id)
+      })),
+      skipDuplicates: true
+    });
+
+    await tx.productBranchAvailability.updateMany({
+      where: {
+        businessId: input.context.businessId,
+        productId: current.id,
+        branchId: {
+          in: data.availableBranchIds
+        }
+      },
+      data: {
+        isAvailable: true
+      }
+    });
+
+    if (unavailableBranchIds.length > 0) {
+      await tx.productBranchAvailability.updateMany({
         where: {
-          businessId_branchId_productId: {
-            businessId: input.context.businessId,
-            branchId: branch.id,
-            productId: current.id
+          businessId: input.context.businessId,
+          productId: current.id,
+          branchId: {
+            in: unavailableBranchIds
           }
         },
-        update: {
-          isAvailable: data.availableBranchIds.includes(branch.id)
-        },
-        create: {
-          businessId: input.context.businessId,
-          branchId: branch.id,
-          productId: current.id,
-          isAvailable: data.availableBranchIds.includes(branch.id)
+        data: {
+          isAvailable: false
         }
       });
     }
@@ -282,7 +346,7 @@ export async function updateCommercialProduct(input: {
     });
 
     return updated;
-  });
+  }, productWriteTransactionOptions);
 }
 
 async function normalizeProductAdminInput(context: AuthContext, input: ProductAdminInput) {
@@ -311,7 +375,8 @@ async function normalizeProductAdminInput(context: AuthContext, input: ProductAd
 
   if (!category) {
     throw new AppError("VALIDATION_ERROR", {
-      message: "Invalid category."
+      message: "Invalid category.",
+      details: { field: "categoryId" } satisfies ProductAdminValidationDetails
     });
   }
 
@@ -350,6 +415,70 @@ async function normalizeProductAdminInput(context: AuthContext, input: ProductAd
     priceBasisUnit: defaults.priceBasisUnit,
     allBranches
   };
+}
+
+function getProductAdminValidationField(value: unknown): ProductAdminValidationField | undefined {
+  if (typeof value === "string" && value in productAdminValidationMessages) {
+    return value as ProductAdminValidationField;
+  }
+
+  return undefined;
+}
+
+function getProductAdminValidationFieldFromMessage(message: string): ProductAdminValidationField | undefined {
+  if (message === "Invalid currency amount.") {
+    return "price";
+  }
+
+  if (message === "Quantity violates minimum or increment rules.") {
+    return "minimumOrderQuantity";
+  }
+
+  return undefined;
+}
+
+function isProductAdminValidationDetails(value: unknown): value is ProductAdminValidationDetails {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "field" in value &&
+    typeof value.field === "string" &&
+    value.field in productAdminValidationMessages
+  );
+}
+
+function logProductAdminValidationFailure(
+  rawInput: Record<string, unknown>,
+  issues: z.core.$ZodIssue[]
+): void {
+  if (process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  console.warn(
+    "Product admin form validation failed",
+    issues.map((issue) => {
+      const path = issue.path.join(".");
+      const value = getRawProductAdminValue(rawInput, issue.path);
+
+      return {
+        path,
+        code: issue.code,
+        message: issue.message,
+        receivedType: Array.isArray(value) ? "array" : typeof value
+      };
+    })
+  );
+}
+
+function getRawProductAdminValue(input: Record<string, unknown>, path: PropertyKey[]): unknown {
+  const [field] = path;
+
+  if (typeof field !== "string" || !(field in input)) {
+    return undefined;
+  }
+
+  return input[field];
 }
 
 async function buildUniqueProductSlug(
