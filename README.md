@@ -40,6 +40,6 @@ npm run build
 O seed cria uma empresa, duas unidades iniciais configuráveis no arquivo de seed e um usuário administrador local:
 
 - email: `admin@deliveryreg.local`
-- senha inicial: `Adminreg123`
+- senha inicial: `Adminreg1234`
 
 Troque a senha antes de qualquer uso fora do desenvolvimento.
