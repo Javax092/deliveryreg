@@ -18,6 +18,7 @@ type SeedProduct = {
   baseUnit: BaseUnit;
   categorySlug: string;
   description: string;
+  imageUrl?: string;
   measurementType: MeasurementType;
   minimumOrderQuantity: number;
   name: string;
@@ -238,6 +239,7 @@ async function main() {
       slug: "queijo-coalho",
       categorySlug: "queijos",
       description: "Queijo coalho vendido por peso.",
+      imageUrl: "/queijoqualho.png",
       measurementType: "WEIGHT",
       baseUnit: "GRAM",
       sellingIncrement: 50,
@@ -251,6 +253,7 @@ async function main() {
       slug: "queijo-manteiga",
       categorySlug: "queijos",
       description: "Queijo manteiga vendido por peso.",
+      imageUrl: "/queijomanteiga.webp",
       measurementType: "WEIGHT",
       baseUnit: "GRAM",
       sellingIncrement: 50,
@@ -317,13 +320,18 @@ async function main() {
           slug: productDefinition.slug,
         },
       },
-      update: {},
+      update: productDefinition.imageUrl
+        ? {
+            imageUrl: productDefinition.imageUrl,
+          }
+        : {},
       create: {
         businessId: business.id,
         categoryId: category.id,
         name: productDefinition.name,
         slug: productDefinition.slug,
         description: productDefinition.description,
+        imageUrl: productDefinition.imageUrl,
         measurementType: productDefinition.measurementType,
         baseUnit: productDefinition.baseUnit,
         sellingIncrement: productDefinition.sellingIncrement,
