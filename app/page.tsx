@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Button } from "@/components/ui/Button";
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-[var(--surface-page)] text-[var(--text-primary)]">
@@ -29,19 +31,19 @@ export default function Home() {
             className="flex items-center gap-2"
             aria-label="Acesso principal"
           >
-            <Link
+            <Button
               href="/catalogo"
-              className="inline-flex min-h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-card)] px-4 text-sm font-semibold text-[var(--text-primary)] no-underline transition hover:bg-[var(--surface-soft)]"
+              variant="secondary"
             >
               Ver catálogo
-            </Link>
+            </Button>
 
-            <Link
+            <Button
               href="/login"
-              className="inline-flex min-h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand-900)] px-4 text-sm font-semibold text-white no-underline shadow-[var(--shadow-xs)] transition hover:bg-[var(--brand-800)]"
+              variant="primary"
             >
               Entrar
-            </Link>
+            </Button>
           </nav>
         </div>
       </header>
@@ -67,19 +69,20 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link
+            <Button
               href="/catalogo"
-              className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--brand-900)] px-5 text-sm font-semibold text-white no-underline shadow-[var(--shadow-xs)] transition hover:bg-[var(--brand-800)]"
+              size="lg"
             >
               Acessar catálogo
-            </Link>
+            </Button>
 
-            <Link
+            <Button
               href="/login"
-              className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-card)] px-5 text-sm font-semibold text-[var(--text-primary)] no-underline shadow-[var(--shadow-xs)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-soft)]"
+              size="lg"
+              variant="secondary"
             >
               Acessar gestão
-            </Link>
+            </Button>
           </div>
         </div>
 

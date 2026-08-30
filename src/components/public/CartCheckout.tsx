@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/Button";
 import {
   buildCartItem,
   formatCartQuantity,
@@ -74,6 +75,7 @@ export function CartCheckout({
     () => items.reduce((total, item) => total + item.estimatedAmountCents, 0),
     [items],
   );
+  const catalogHref = sourceCode ? `/catalogo?origem=${encodeURIComponent(sourceCode)}` : "/catalogo";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -163,12 +165,9 @@ export function CartCheckout({
     return (
       <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-card)] p-5 text-[var(--text-secondary)] shadow-[var(--shadow-xs)]">
         <p className="font-medium text-[var(--text-primary)]">Seu carrinho está vazio.</p>
-        <a
-          className="mt-4 flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--success)] font-semibold text-[var(--success)]"
-          href={sourceCode ? `/catalogo?origem=${encodeURIComponent(sourceCode)}` : "/catalogo"}
-        >
-          Ver catálogo
-        </a>
+        <Button className="mt-4" fullWidth href={catalogHref} size="lg">
+          Voltar ao catálogo
+        </Button>
       </div>
     );
   }
@@ -198,8 +197,8 @@ export function CartCheckout({
                     Quantidade: {formatCartQuantity(item)}
                   </p>
                 </div>
-                <p className="shrink-0 text-right font-semibold text-[var(--text-primary)]">
-                  {formatBRL(item.estimatedAmountCents)}
+                  <p className="shrink-0 text-right font-semibold text-[var(--text-primary)]">
+                    Item {formatBRL(item.estimatedAmountCents)}
                 </p>
               </div>
 
@@ -247,8 +246,8 @@ export function CartCheckout({
             <span>{items.length}</span>
           </div>
           <div className="flex items-center justify-between gap-3 text-sm text-[var(--text-secondary)]">
-            <span>Subtotal estimado</span>
-            <span>{formatBRL(totalCents)}</span>
+            <span>Subtotal</span>
+            <span>Incluído no total</span>
           </div>
           <div className="border-t border-[var(--border-soft)] pt-3">
             <div className="flex items-end justify-between gap-3">
@@ -394,23 +393,26 @@ export function CartCheckout({
               Unidade:{" "}
               {branches.find((branch) => branch.id === branchId)?.name ?? "Selecione uma unidade"}
             </p>
-            <p>Total estimado: {formatBRL(totalCents)}</p>
+            <p>Valor previsto: {formatBRL(totalCents)}</p>
           </div>
         </section>
 
         <section className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-card)] p-4 shadow-[var(--shadow-xs)]">
           <StepTitle number={fulfillmentType === "DELIVERY" ? "6" : "5"} title="Confirmar pedido" />
-          <button
-            className="mt-3 h-12 w-full rounded-[var(--radius-md)] bg-[var(--success)] px-4 font-semibold text-white disabled:bg-[var(--text-subtle)]"
+          <Button
+            className="mt-3"
             disabled={isSubmitting || !branchId}
+            fullWidth
+            size="lg"
             type="submit"
           >
+            <span className="sr-only">Fazer pedido. </span>
             {isSubmitting
               ? "Confirmando pedido..."
               : fulfillmentType === "DELIVERY"
                 ? "Confirmar pedido para entrega"
                 : "Confirmar pedido para retirada"}
-          </button>
+          </Button>
           {message ? (
             <p
               className="mt-3 rounded-[var(--radius-md)] bg-[var(--danger-soft)] p-3 text-sm font-medium text-[var(--danger)]"

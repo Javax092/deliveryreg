@@ -142,10 +142,12 @@ export function QuantityInterest(props: Props) {
         </p>
       ) : null}
 
-      <div className="mt-4 rounded-md bg-slate-100 p-3">
-        <p className="text-sm text-slate-600">Estimativa</p>
-        <p className="text-2xl font-semibold text-slate-950">{formatBRL(estimatedCents)}</p>
-      </div>
+      {props.measurementType === "WEIGHT" ? (
+        <div className="mt-4 rounded-md bg-slate-100 p-3">
+          <p className="text-sm text-slate-600">Estimativa</p>
+          <p className="text-2xl font-semibold text-slate-950">{formatBRL(estimatedCents)}</p>
+        </div>
+      ) : null}
 
       <form className="mt-5 space-y-3" onSubmit={submit}>
         <button

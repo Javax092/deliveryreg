@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight, ShoppingBag } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { readPublicCart, type PublicCartItem } from "@/modules/public-cart/cart";
@@ -39,22 +40,29 @@ export function CatalogCartSummary({ sourceCode }: { sourceCode?: string }) {
   const href = sourceCode ? `/carrinho?origem=${encodeURIComponent(sourceCode)}` : "/carrinho";
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--border-default)] bg-white/95 px-4 py-3 shadow-[var(--shadow-md)] backdrop-blur">
+    <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 sm:px-4">
       <Link
-        className="mx-auto grid min-h-14 max-w-2xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-md)] border border-[var(--success)] bg-white px-4 text-sm text-[var(--text-primary)] shadow-[var(--shadow-sm)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-600)] focus:ring-offset-2 sm:flex sm:min-h-12 sm:justify-between"
+        className="mx-auto grid min-h-16 max-w-2xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--brand-800)] bg-[var(--brand-900)] px-4 text-sm text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--brand-800)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-600)] focus:ring-offset-2 sm:min-h-14 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto]"
         href={href}
       >
-        <span className="min-w-0">
-          <span className="block truncate font-semibold">
+        <span
+          aria-hidden="true"
+          className="grid h-10 w-10 place-items-center rounded-full bg-white/12 text-white"
+        >
+          <ShoppingBag className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 leading-tight">
+          <span className="block truncate font-semibold text-white">
             Carrinho • {summary.count} {summary.count === 1 ? "item" : "itens"}
           </span>
-          <span className="block text-base font-semibold text-[var(--text-primary)] sm:hidden">
+          <span className="block text-base font-bold text-white sm:hidden">
             {formatBRL(summary.totalCents)}
           </span>
         </span>
-        <span className="hidden font-semibold sm:inline">{formatBRL(summary.totalCents)}</span>
-        <span className="rounded-[var(--radius-md)] bg-[var(--success)] px-3 py-2 font-semibold text-white">
+        <span className="hidden font-bold text-white sm:inline">{formatBRL(summary.totalCents)}</span>
+        <span className="inline-flex min-h-10 items-center gap-1 rounded-[var(--radius-md)] bg-white px-3 font-semibold text-[var(--brand-900)]">
           Ver carrinho
+          <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </span>
       </Link>
     </div>

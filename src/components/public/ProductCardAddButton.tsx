@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Check, Minus, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/Button";
 import { formatQuantity } from "@/modules/catalog/product-domain";
 import {
   buildCartItem,
@@ -25,6 +27,7 @@ type Props = {
 export function ProductCardAddButton(props: Props) {
   const [quantity, setQuantity] = useState(props.minimumQuantity);
   const [message, setMessage] = useState<string | null>(null);
+  const messageTimeout = useRef<number | null>(null);
   const {
     basisQuantity,
     basisUnit,
@@ -64,6 +67,14 @@ export function ProductCardAddButton(props: Props) {
     ],
   );
 
+  useEffect(() => {
+    return () => {
+      if (messageTimeout.current) {
+        window.clearTimeout(messageTimeout.current);
+      }
+    };
+  }, []);
+
   function decreaseQuantity() {
     setQuantity((current) => Math.max(minimumQuantity, current - sellingIncrement));
     setMessage(null);
@@ -102,22 +113,33 @@ export function ProductCardAddButton(props: Props) {
       })
     });
 
-    setMessage("Adicionado ao carrinho");
+    setMessage("Adicionado");
+
+    if (messageTimeout.current) {
+      window.clearTimeout(messageTimeout.current);
+    }
+
+    messageTimeout.current = window.setTimeout(() => {
+      setMessage(null);
+    }, 1800);
   }
 
   return (
     <div className="space-y-1.5">
-      <div className="flex min-h-9 items-center justify-between overflow-hidden rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-soft)]">
+      <div className="flex min-h-9 items-center justify-between overflow-hidden rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-soft)] transition focus-within:border-[var(--brand-600)] focus-within:ring-2 focus-within:ring-[var(--focus-ring)]">
         <button
           aria-label={`Diminuir quantidade de ${props.productName}`}
-          className="grid h-9 w-10 shrink-0 place-items-center text-base font-semibold text-[var(--text-primary)] disabled:text-[var(--text-subtle)]"
+          className="grid h-9 w-9 shrink-0 place-items-center text-[var(--text-primary)] transition hover:bg-white disabled:text-[var(--text-subtle)]"
           disabled={quantity <= props.minimumQuantity}
           onClick={decreaseQuantity}
           type="button"
         >
-          -
+          <Minus aria-hidden="true" className="h-4 w-4" />
         </button>
-        <span className="min-w-0 px-2 text-center text-xs font-semibold text-[var(--text-primary)]">
+        <span
+          className="min-w-0 px-1 text-center text-xs font-semibold text-[var(--text-primary)]"
+          key={quantity}
+        >
           {formatQuantity({
             measurementType,
             quantity,
@@ -125,29 +147,38 @@ export function ProductCardAddButton(props: Props) {
         </span>
         <button
           aria-label={`Aumentar quantidade de ${props.productName}`}
-          className="grid h-9 w-10 shrink-0 place-items-center text-base font-semibold text-[var(--text-primary)]"
+          className="grid h-9 w-9 shrink-0 place-items-center text-[var(--text-primary)] transition hover:bg-white"
           onClick={increaseQuantity}
           type="button"
         >
-          +
+          <Plus aria-hidden="true" className="h-4 w-4" />
         </button>
       </div>
-      <p className="text-xs font-semibold text-[var(--text-primary)]">
-        {formatBRL(estimatedAmountCents)}{" "}
-        <span className="font-medium text-[var(--text-muted)]">estimado</span>
-      </p>
-      <button
-        className="min-h-10 w-full rounded-[var(--radius-sm)] bg-[var(--success)] px-3 text-sm font-semibold text-white transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[var(--brand-600)] focus:ring-offset-2"
+      {measurementType === "WEIGHT" || measurementType === "VOLUME" ? (
+        <p className="text-sm font-bold leading-tight text-[var(--text-primary)]">
+          {formatBRL(estimatedAmountCents)}{" "}
+          <span className="font-medium text-[var(--text-muted)]">estimado</span>
+        </p>
+      ) : null}
+      <Button
+        className="min-h-10 rounded-[var(--radius-sm)] text-sm"
+        fullWidth
         onClick={addToCart}
         type="button"
       >
-        Adicionar
-      </button>
+        {message ? (
+          <>
+            <Check aria-hidden="true" className="h-4 w-4" />
+            {message}
+          </>
+        ) : (
+          "Adicionar"
+        )}
+      </Button>
       {message ? (
-        <p className="text-xs font-semibold text-[var(--success)]" role="status">
-          <span aria-hidden="true">✓ </span>
-          {message}
-        </p>
+        <span className="sr-only" role="status">
+          Produto adicionado ao carrinho
+        </span>
       ) : null}
     </div>
   );

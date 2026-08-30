@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { assertSufficientInventory, assertStockMovement } from "@/modules/inventory/ledger";
+import { AppError } from "@/modules/shared/errors/app-error";
 
 export async function getAvailableQuantity(input: {
   tx: Prisma.TransactionClient;
@@ -53,6 +54,22 @@ export async function createStockMovement(input: {
     type: input.type,
     quantityDelta: input.quantityDelta
   });
+
+  const product = await input.tx.product.findFirst({
+    where: {
+      id: input.productId,
+      businessId: input.businessId
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!product) {
+    throw new AppError("NOT_FOUND", {
+      message: "Product does not belong to business."
+    });
+  }
 
   if (input.quantityDelta < 0) {
     await lockInventoryBalance(input);

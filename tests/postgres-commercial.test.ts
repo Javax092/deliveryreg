@@ -12,13 +12,14 @@ import {
   updateCommercialProduct,
 } from "@/modules/catalog/admin-service";
 import { createPosSale } from "@/modules/pos/create-pos-sale";
-import { transferInventory } from "@/modules/inventory/operations";
+import { adjustInventory, transferInventory } from "@/modules/inventory/operations";
 import { assignDelivery } from "@/modules/delivery/operation";
 import { hashPassword } from "@/modules/identity/password";
 import {
   getManagementDashboard,
   resolveManagementPeriod,
 } from "@/modules/management/dashboard";
+import { getPublicCatalog } from "@/modules/public-catalog/queries";
 import {
   closeCashSession,
   createCashMovement,
@@ -506,6 +507,7 @@ run("PostgreSQL comercial e concorrência", () => {
     const fixtureA = await createFixture();
     const fixtureB = await createFixture();
     const ctxA = context(fixtureA.attendant, [fixtureA.branchA.id]);
+    const ownerCtxA = context(fixtureA.owner, [fixtureA.branchA.id]);
     const orderB = await createReadyOrder(fixtureB);
 
     await expect(
@@ -513,6 +515,15 @@ run("PostgreSQL comercial e concorrência", () => {
         context: ctxA,
         orderId: orderB.id,
         idempotencyKey: "cross",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      adjustInventory({
+        context: ownerCtxA,
+        branchId: fixtureA.branchA.id,
+        productId: fixtureB.product.id,
+        quantityDelta: 1,
+        reason: "Tentativa cross tenant",
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
@@ -594,6 +605,11 @@ run("PostgreSQL comercial e concorrência", () => {
         },
       }),
     ).toMatchObject({ isAvailable: true });
+    let catalog = await getPublicCatalog({});
+    let catalogProducts = catalog?.categories.flatMap((category) => category.products) ?? [];
+    expect(catalogProducts.find((item) => item.id === product.id)?.prices[0]?.priceCents).toBe(
+      1250,
+    );
 
     await updateCommercialProduct({
       context: ctx,
@@ -641,6 +657,45 @@ run("PostgreSQL comercial e concorrência", () => {
         where: { entityType: "Product", entityId: product.id },
       }),
     ).toBeGreaterThanOrEqual(3);
+    catalog = await getPublicCatalog({});
+    catalogProducts = catalog?.categories.flatMap((category) => category.products) ?? [];
+    expect(catalogProducts.some((item) => item.id === product.id)).toBe(false);
+
+    await updateCommercialProduct({
+      context: ctx,
+      productId: product.id,
+      data: {
+        name: "Produto Comercial Teste Editado",
+        description: "Editado pela gestão comercial.",
+        categoryId: fixture.product.categoryId ?? "",
+        imageUrl: "",
+        measurementType: "UNIT",
+        price: "15,00",
+        minimumOrderQuantity: 1,
+        sellingIncrement: 1,
+        isActive: true,
+        availableBranchIds: [fixture.branchB.id],
+      },
+    });
+
+    catalog = await getPublicCatalog({ sourceCode: fixture.source.code });
+    catalogProducts = catalog?.categories.flatMap((category) => category.products) ?? [];
+    expect(catalogProducts.some((item) => item.id === product.id)).toBe(false);
+
+    catalog = await getPublicCatalog({});
+    catalogProducts = catalog?.categories.flatMap((category) => category.products) ?? [];
+    expect(catalogProducts.find((item) => item.id === product.id)?.prices[0]?.priceCents).toBe(
+      1500,
+    );
+
+    await prisma.productPrice.updateMany({
+      where: { productId: product.id, endsAt: null },
+      data: { endsAt: new Date() },
+    });
+
+    catalog = await getPublicCatalog({});
+    catalogProducts = catalog?.categories.flatMap((category) => category.products) ?? [];
+    expect(catalogProducts.some((item) => item.id === product.id)).toBe(false);
   });
 
   it("agrega dashboard gerencial com semântica de venda, pagamento, tenant e filial", async () => {

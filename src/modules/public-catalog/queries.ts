@@ -1,6 +1,17 @@
 import { prisma } from "@/db/prisma";
 import { resolveLeadSource } from "@/modules/leads/source";
 
+function activePriceWhere(now: Date) {
+  return {
+    some: {
+      startsAt: {
+        lte: now
+      },
+      endsAt: null
+    }
+  };
+}
+
 export async function getDefaultPublicBusiness() {
   return prisma.business.findFirst({
     select: {
@@ -31,6 +42,8 @@ export async function getPublicCatalog(input: {
   const branchId = source?.branchId ?? undefined;
   const search = input.search?.trim();
   const categorySlug = input.categorySlug?.trim();
+  const now = new Date();
+  const activePrices = activePriceWhere(now);
 
   const productAvailabilityWhere = branchId
     ? {
@@ -44,7 +57,6 @@ export async function getPublicCatalog(input: {
           isAvailable: true
         }
       };
-
   const productSearchWhere = search
     ? {
         OR: [
@@ -80,7 +92,8 @@ export async function getPublicCatalog(input: {
         some: {
           businessId: business.id,
           isActive: true,
-          availability: productAvailabilityWhere
+          availability: productAvailabilityWhere,
+          prices: activePrices
         }
       }
     },
@@ -109,7 +122,8 @@ export async function getPublicCatalog(input: {
           businessId: business.id,
           isActive: true,
           ...productSearchWhere,
-          availability: productAvailabilityWhere
+          availability: productAvailabilityWhere,
+          prices: activePrices
         }
       }
     },
@@ -122,7 +136,8 @@ export async function getPublicCatalog(input: {
           businessId: business.id,
           isActive: true,
           ...productSearchWhere,
-          availability: productAvailabilityWhere
+          availability: productAvailabilityWhere,
+          prices: activePrices
         },
         select: {
           id: true,
@@ -135,6 +150,9 @@ export async function getPublicCatalog(input: {
           sellingIncrement: true,
           prices: {
             where: {
+              startsAt: {
+                lte: now
+              },
               endsAt: null
             },
             select: {
@@ -187,12 +205,17 @@ export async function getPublicProduct(input: {
     sourceCode: input.sourceCode
   });
   const branchId = source?.branchId ?? undefined;
+  const now = new Date();
 
   const product = await prisma.product.findFirst({
     where: {
       businessId: business.id,
       slug: input.slug,
       isActive: true,
+      category: {
+        isActive: true
+      },
+      prices: activePriceWhere(now),
       availability: branchId
         ? {
             some: {
@@ -222,6 +245,9 @@ export async function getPublicProduct(input: {
       },
       prices: {
         where: {
+          startsAt: {
+            lte: now
+          },
           endsAt: null
         },
         select: {

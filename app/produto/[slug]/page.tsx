@@ -1,9 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AnalyticsPing } from "@/components/public/AnalyticsPing";
-import { ProductImageFallback } from "@/components/public/ProductImageFallback";
+import { PublicProductImage } from "@/components/public/PublicProductImage";
 import { QuantityInterest } from "@/components/public/QuantityInterest";
 import { formatCatalogPrice, formatQuantity } from "@/modules/catalog/product-domain";
 import { resolvePublicSourceCode } from "@/modules/leads/source";
@@ -52,15 +51,14 @@ export default async function ProdutoPage({ params, searchParams }: Props) {
         </Link>
         <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
           <div>
-            {product.imageUrl ? (
-              <img
-                alt={product.name}
-                className="aspect-[4/3] h-full w-full object-cover"
-                src={product.imageUrl}
-              />
-            ) : (
-              <ProductImageFallback name={product.name} />
-            )}
+            <PublicProductImage
+              alt={product.name}
+              className="aspect-[4/3] h-full"
+              name={product.name}
+              priority
+              sizes="(max-width: 768px) 100vw, 50vw"
+              src={product.imageUrl}
+            />
           </div>
           <div className="p-5">
             <p className="text-sm font-semibold text-emerald-700">{result.business.name}</p>

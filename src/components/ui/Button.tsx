@@ -37,13 +37,13 @@ function joinClasses(
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--brand-900)] text-white shadow-[var(--shadow-xs)] hover:bg-[var(--brand-800)]",
+    "bg-[var(--brand-900)] text-[var(--text-on-brand)] shadow-[var(--shadow-xs)] hover:bg-[var(--brand-800)] disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-subtle)] disabled:shadow-none",
   secondary:
-    "border border-[var(--border-default)] bg-white text-[var(--text-primary)] shadow-[var(--shadow-xs)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-soft)]",
+    "border border-[var(--border-default)] bg-white text-[var(--text-primary)] shadow-[var(--shadow-xs)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-soft)] disabled:border-[var(--border-soft)] disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-subtle)] disabled:shadow-none",
   ghost:
-    "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]",
+    "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)] disabled:text-[var(--text-subtle)]",
   danger:
-    "bg-[var(--danger)] text-white shadow-[var(--shadow-xs)] hover:opacity-90",
+    "bg-[var(--danger)] text-white shadow-[var(--shadow-xs)] hover:opacity-90 disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-subtle)] disabled:shadow-none",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -53,7 +53,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 };
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-semibold no-underline transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-600)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-semibold no-underline transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-600)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed";
 
 function getButtonClasses(
   props: Pick<

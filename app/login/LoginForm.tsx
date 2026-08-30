@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { Button } from "@/components/ui/Button";
+
 import { loginAction, type LoginState } from "./actions";
 
 const initialState: LoginState = {};
@@ -15,7 +17,7 @@ export function LoginForm() {
         E-mail
         <input
           autoComplete="email"
-          className="h-11 rounded-md border border-slate-300 px-3"
+          className="h-11 rounded-md border border-slate-300 px-3 text-slate-950 focus:border-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-800/15"
           name="email"
           type="email"
         />
@@ -24,19 +26,20 @@ export function LoginForm() {
         Senha
         <input
           autoComplete="current-password"
-          className="h-11 rounded-md border border-slate-300 px-3"
+          className="h-11 rounded-md border border-slate-300 px-3 text-slate-950 focus:border-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-800/15"
           name="password"
           type="password"
         />
       </label>
       {state.message ? <p className="text-sm font-medium text-red-700">{state.message}</p> : null}
-      <button
-        className="h-11 rounded-md bg-emerald-700 font-semibold text-white disabled:opacity-60"
+      <Button
         disabled={pending}
+        fullWidth
+        size="lg"
         type="submit"
       >
         Entrar
-      </button>
+      </Button>
     </form>
   );
 }
