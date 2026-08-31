@@ -5,11 +5,13 @@ import { AppError } from "@/modules/shared/errors/app-error";
 import { formatBRL } from "@/modules/shared/money/money";
 import { measurementTypeSchema, validateSellingQuantity } from "@/modules/shared/quantity/measurement";
 
+export const productImageUrlSchema = z.string().trim().refine(isValidProductImageUrl);
+
 export const productInputSchema = z.object({
   name: z.string().trim().min(2),
   slug: z.string().trim().min(2).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   description: z.string().trim().max(500).optional(),
-  imageUrl: z.string().url().optional(),
+  imageUrl: productImageUrlSchema.optional(),
   measurementType: measurementTypeSchema,
   baseUnit: z.enum(["GRAM", "UNIT", "PACKAGE", "MILLILITER", "BOX"]),
   sellingIncrement: z.number().int().positive(),
@@ -30,6 +32,18 @@ export function slugifyProductName(name: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function isValidProductImageUrl(value: string): boolean {
+  if (value.startsWith("/") && !value.startsWith("//")) {
+    return true;
+  }
+
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export function parseCurrencyToCents(value: string): number {

@@ -41,21 +41,23 @@ test.describe("Login, sessao, RBAC e isolamento", () => {
     await logout(page);
     await login(page, e2e.users.managerA);
     await page.goto("/pdv");
-    await expect(page.getByRole("heading", { name: "PDV presencial" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "PDV" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Caixa fechado" })).toBeVisible();
 
     await logout(page);
     await login(page, e2e.users.attendantA1);
     await page.goto("/gestao");
     await expect(page.getByText("Faturamento")).not.toBeVisible();
     await page.goto("/pdv");
-    await expect(page.getByRole("heading", { name: "PDV presencial" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "PDV" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Caixa fechado" })).toBeVisible();
 
     await logout(page);
     await login(page, e2e.users.deliveryA1);
     await page.goto("/entregas");
     await expect(page.getByRole("heading", { name: "Entregas" })).toBeVisible();
     await page.goto("/pdv");
-    await expect(page.getByRole("heading", { name: "PDV presencial" })).not.toBeVisible();
+    await expect(page.getByRole("heading", { name: "PDV" })).not.toBeVisible();
   });
 
   test("isola filial A2 de usuario operacional restrito a A1", async ({ page }) => {

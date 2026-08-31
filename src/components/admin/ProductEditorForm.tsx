@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { AdminActionForm } from "@/components/admin/AdminActionForm";
 import { ProductImageFallback } from "@/components/public/ProductImageFallback";
+import { PublicProductImage } from "@/components/public/PublicProductImage";
 import type { ActionResult } from "@/modules/shared/actions/action-result";
 
 const fieldClass =
@@ -241,17 +242,24 @@ export function ProductEditorForm({
               value={imageUrl}
               onChange={(event) => setImageUrl(event.target.value)}
             />
+            <p className="mt-1 text-xs text-slate-500">
+              Use uma URL HTTPS pública da fotografia do produto.
+            </p>
           </div>
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             {imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img alt="Preview do produto" className="aspect-[4/3] w-full object-cover" src={imageUrl} />
+              <PublicProductImage
+                alt="Preview do produto"
+                className="aspect-[4/3]"
+                name={product?.name ?? "Produto"}
+                src={imageUrl}
+              />
             ) : (
               <ProductImageFallback name={product?.name ?? "Produto"} />
             )}
           </div>
           <p className="text-sm text-slate-600">
-            Upload de imagem não está configurado. Use uma URL pública ou mantenha o fallback.
+            Upload de imagem não está configurado. Cadastre uma URL pública estável ou mantenha o fallback.
           </p>
         </aside>
       </div>

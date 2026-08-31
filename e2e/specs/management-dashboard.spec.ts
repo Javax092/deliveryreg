@@ -8,7 +8,7 @@ test.describe("dashboard gerencial", () => {
 
     await expect(page.getByRole("heading", { name: "Painel operacional" })).toBeVisible();
     await expect(page.getByText("Vendas reconhecidas")).toBeVisible();
-    await page.getByRole("link", { name: "Ver gestao por periodo" }).click();
+    await page.getByRole("link", { name: "Abrir gestão" }).click();
 
     await expect(page.getByRole("heading", { name: "Gestão" })).toBeVisible();
     await page.locator('select[name="period"]').selectOption("custom");

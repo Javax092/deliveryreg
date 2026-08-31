@@ -6,6 +6,7 @@ import { writeAuditLog } from "@/modules/audit/audit";
 import { assertBranchAccess } from "@/modules/business/tenant";
 import {
   parseCurrencyToCents,
+  productImageUrlSchema,
   slugifyProductName,
   validateProductRules
 } from "@/modules/catalog/product-domain";
@@ -18,7 +19,7 @@ const productAdminSchema = z.object({
   name: z.string().trim().min(2),
   description: z.string().trim().max(500).optional().or(z.literal("")),
   categoryId: z.string().min(1),
-  imageUrl: z.string().trim().url().optional().or(z.literal("")),
+  imageUrl: productImageUrlSchema.or(z.literal("")),
   measurementType: z.enum(["WEIGHT", "UNIT", "PACKAGE", "VOLUME", "BOX"]),
   price: z.string().trim().min(1),
   minimumOrderQuantity: z.coerce.number().int().positive(),
@@ -31,7 +32,7 @@ const productAdminValidationMessages = {
   name: "Informe um nome válido.",
   description: "Informe uma descrição com até 500 caracteres.",
   categoryId: "Selecione uma categoria.",
-  imageUrl: "Informe uma URL de imagem válida.",
+  imageUrl: "Informe uma URL HTTPS pública da imagem.",
   measurementType: "Selecione a unidade de venda.",
   price: "Informe um preço válido.",
   minimumOrderQuantity: "Informe uma quantidade mínima válida.",

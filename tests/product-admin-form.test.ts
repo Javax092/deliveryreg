@@ -58,4 +58,52 @@ describe("product admin form parser", () => {
       availableBranchIds: ["branch_1", "branch_2"]
     });
   });
+
+  it("accepts HTTPS image URLs and local public asset paths", () => {
+    const httpsFormData = buildValidProductFormData("https://example.com/produto.jpg");
+    const localFormData = buildValidProductFormData("/queijoqualho.png");
+
+    expect(parseProductAdminForm(httpsFormData).imageUrl).toBe("https://example.com/produto.jpg");
+    expect(parseProductAdminForm(localFormData).imageUrl).toBe("/queijoqualho.png");
+  });
+
+  it("rejects HTTP, Base64 data URLs, and protocol-relative image URLs", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    for (const imageUrl of [
+      "http://example.com/produto.jpg",
+      "data:image/png;base64,abc",
+      "//example.com/produto.jpg"
+    ]) {
+      let error: unknown;
+      try {
+        parseProductAdminForm(buildValidProductFormData(imageUrl));
+      } catch (caught) {
+        error = caught;
+      }
+
+      expect(getProductAdminValidationMessage(error)).toBe(
+        "Informe uma URL HTTPS pública da imagem."
+      );
+    }
+
+    warn.mockRestore();
+  });
 });
+
+function buildValidProductFormData(imageUrl: string) {
+  const formData = new FormData();
+
+  formData.set("name", "Produto simples");
+  formData.set("description", "");
+  formData.set("categoryId", "category_1");
+  formData.set("imageUrl", imageUrl);
+  formData.set("measurementType", "UNIT");
+  formData.set("price", "42,00");
+  formData.set("minimumOrderQuantity", "1");
+  formData.set("sellingIncrement", "1");
+  formData.set("isActive", "on");
+  formData.append("availableBranchIds", "branch_1");
+
+  return formData;
+}

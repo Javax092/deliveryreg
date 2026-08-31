@@ -12,6 +12,29 @@ import {
 } from "../fixtures";
 
 test.describe("Catalogo publico e pedido", () => {
+  test("redireciona a raiz para o catalogo publico", async ({ page }) => {
+    await page.goto("/");
+
+    await expect(page).toHaveURL(/\/catalogo$/);
+    await expect(page.getByRole("heading", { name: "E2E Business A" })).toBeVisible();
+  });
+
+  test("resolve origem publica Alvorada 1 e Alvorada 2", async ({ page }) => {
+    await page.goto(`/catalogo?origem=${e2e.alvoradaSourceA1}`);
+    await expect(page.getByText("Unidade E2E Filial A1")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver carrinho" })).toHaveAttribute(
+      "href",
+      `/carrinho?origem=${e2e.alvoradaSourceA1}`
+    );
+
+    await page.goto(`/catalogo?origem=${e2e.alvoradaSourceA2}`);
+    await expect(page.getByText("Unidade E2E Filial A2")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver carrinho" })).toHaveAttribute(
+      "href",
+      `/carrinho?origem=${e2e.alvoradaSourceA2}`
+    );
+  });
+
   test("carrega catalogo por QR, monta carrinho e cria pedido de retirada", async ({ page }) => {
     await page.goto(`/catalogo?source=${e2e.sourceA1}`);
 
@@ -67,8 +90,8 @@ test.describe("Catalogo publico e pedido", () => {
     await orderCard.getByRole("button", { name: "Aceitar" }).click();
     await expect(orderCard.getByRole("button", { name: "Iniciar preparo" })).toBeVisible();
     await orderCard.getByRole("button", { name: "Iniciar preparo" }).click();
-    await expect(orderCard.getByRole("button", { name: "Marcar pronto" })).toBeVisible();
-    await orderCard.getByRole("button", { name: "Marcar pronto" }).click();
+    await expect(orderCard.getByRole("button", { name: "Marcar como pronto" })).toBeVisible();
+    await orderCard.getByRole("button", { name: "Marcar como pronto" }).click();
     await expect(orderCard.getByRole("button", { name: "Finalizar" })).toBeVisible();
     await orderCard.getByRole("button", { name: "Finalizar" }).click();
     await expect(page.getByText(`Pedido #${orderId.slice(-6)}`)).not.toBeVisible();

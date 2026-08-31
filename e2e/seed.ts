@@ -17,7 +17,9 @@ const ids = {
   unitProduct: "e2e_product_unit",
   businessBProduct: "e2e_product_business_b",
   sourceA1: "e2e_source_a1",
-  sourceA2: "e2e_source_a2"
+  sourceA2: "e2e_source_a2",
+  alvoradaSourceA1: "e2e_source_alvorada_a1",
+  alvoradaSourceA2: "e2e_source_alvorada_a2"
 };
 
 export async function resetE2eDatabase() {
@@ -275,6 +277,20 @@ export async function seedE2eDatabase() {
         branchId: ids.branchA2,
         code: "qr-e2e-a2",
         label: "QR E2E A2"
+      },
+      {
+        id: ids.alvoradaSourceA1,
+        businessId: ids.businessA,
+        branchId: ids.branchA1,
+        code: "qr-alvorada-1-01",
+        label: "QR Code Alvorada 1 - 01"
+      },
+      {
+        id: ids.alvoradaSourceA2,
+        businessId: ids.businessA,
+        branchId: ids.branchA2,
+        code: "qr-alvorada-2-01",
+        label: "QR Code Alvorada 2 - 01"
       }
     ]
   });

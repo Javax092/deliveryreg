@@ -1,5 +1,8 @@
+"use client";
+
 /* eslint-disable @next/next/no-img-element */
 import Image from "next/image";
+import { useState } from "react";
 
 import { ProductImageFallback } from "@/components/public/ProductImageFallback";
 
@@ -26,9 +29,11 @@ export function PublicProductImage({
   sizes = "(max-width: 640px) 45vw, (max-width: 1024px) 33vw, 25vw",
   src,
 }: Props) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const loadFailed = Boolean(src && failedSrc === src);
   const frameClassName = `relative overflow-hidden bg-[var(--surface-muted)] ${className}`;
 
-  if (!src) {
+  if (!src || loadFailed) {
     return <ProductImageFallback className={className} name={name} />;
   }
 
@@ -42,6 +47,7 @@ export function PublicProductImage({
           priority={priority}
           sizes={sizes}
           src={src}
+          onError={() => setFailedSrc(src)}
         />
       </div>
     );
@@ -49,7 +55,12 @@ export function PublicProductImage({
 
   return (
     <div className={frameClassName}>
-      <img alt={alt} className={`h-full w-full object-cover ${imageClassName}`} src={src} />
+      <img
+        alt={alt}
+        className={`h-full w-full object-cover ${imageClassName}`}
+        src={src}
+        onError={() => setFailedSrc(src)}
+      />
     </div>
   );
 }

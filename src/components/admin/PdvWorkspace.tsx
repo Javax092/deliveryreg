@@ -5,6 +5,7 @@ import type { BaseUnit, MeasurementType } from "@prisma/client";
 
 import { finalizePosSale } from "../../../app/(admin)/pdv/actions";
 import { PdvSaleForm } from "@/components/admin/PdvSaleForm";
+import { PublicProductImage } from "@/components/public/PublicProductImage";
 
 type PaymentMethod = "PIX" | "DEBIT_CARD" | "CREDIT_CARD" | "CASH";
 
@@ -281,14 +282,12 @@ export function PdvWorkspace({
                   onClick={() => selectProduct(product.id)}
                 >
                   <div className="pdv-product-image">
-                    {product.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={product.imageUrl} alt="" />
-                    ) : (
-                      <span aria-hidden="true">
-                        {product.name.charAt(0).toUpperCase()}
-                      </span>
-                    )}
+                    <PublicProductImage
+                      alt=""
+                      className="h-full w-full"
+                      name={product.name}
+                      src={product.imageUrl}
+                    />
                   </div>
 
                   <div className="pdv-product-info">

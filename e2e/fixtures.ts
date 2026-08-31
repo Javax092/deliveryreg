@@ -7,6 +7,8 @@ export const e2e = {
   password: "senha-e2e-local-2026",
   sourceA1: "qr-e2e-a1",
   sourceA2: "qr-e2e-a2",
+  alvoradaSourceA1: "qr-alvorada-1-01",
+  alvoradaSourceA2: "qr-alvorada-2-01",
   weightProductName: "E2E Queijo por peso",
   unitProductName: "E2E Produto unitario",
   businessBProductName: "E2E Produto exclusivo B",
@@ -72,7 +74,7 @@ export async function checkoutDelivery(page: Page, customerName: string, phone: 
   if (!(await page.getByRole("heading", { name: "Carrinho", exact: true }).isVisible().catch(() => false))) {
     await page.getByRole("link", { name: "Ver carrinho" }).click();
   }
-  await page.getByLabel("Como você quer receber").selectOption("DELIVERY");
+  await page.getByText("Receber por entrega", { exact: true }).click();
   await page.getByPlaceholder("Rua").fill("Rua E2E");
   await page.getByPlaceholder("Número").fill("100");
   await page.getByPlaceholder("Bairro").fill("Centro");

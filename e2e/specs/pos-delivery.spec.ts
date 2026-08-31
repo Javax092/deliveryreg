@@ -16,10 +16,10 @@ test.describe("PDV, estoque e delivery", () => {
     await login(page, e2e.users.attendantA1);
     await page.goto("/pdv");
 
-    await page.getByLabel("Unidade", { exact: true }).selectOption("e2e_branch_a1");
-    await page.getByLabel("Produto").selectOption("e2e_product_unit");
-    await page.getByLabel("Quantidade ou peso em unidade base").fill("2");
-    await page.getByLabel("Forma de pagamento").selectOption("PIX");
+    await page.getByRole("combobox", { name: "Unidade" }).selectOption("e2e_branch_a1");
+    await page.getByRole("button", { name: new RegExp(e2e.unitProductName) }).click();
+    await page.getByRole("spinbutton", { name: "Quantidade" }).fill("2");
+    await page.getByText("Pix", { exact: true }).click();
     await page.getByRole("button", { name: "Finalizar venda" }).click();
 
     await expect
@@ -66,9 +66,9 @@ test.describe("PDV, estoque e delivery", () => {
     await createOpenCashSessionDirect();
     await login(page, e2e.users.attendantA1);
     await page.goto("/pdv");
-    await page.getByLabel("Unidade", { exact: true }).selectOption("e2e_branch_a1");
-    await page.getByLabel("Produto").selectOption("e2e_product_unit");
-    await page.getByLabel("Quantidade ou peso em unidade base").fill("9999");
+    await page.getByRole("combobox", { name: "Unidade" }).selectOption("e2e_branch_a1");
+    await page.getByRole("button", { name: new RegExp(e2e.unitProductName) }).click();
+    await page.getByRole("spinbutton", { name: "Quantidade" }).fill("9999");
     await page.getByRole("button", { name: "Finalizar venda" }).click();
 
     expect(

@@ -1,7 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 
-import { ProductImageFallback } from "@/components/public/ProductImageFallback";
+import { PublicProductImage } from "@/components/public/PublicProductImage";
 import { prisma } from "@/db/prisma";
 import { formatCatalogPrice, formatQuantity } from "@/modules/catalog/product-domain";
 import { listAdminCategories, listAdminProducts } from "@/modules/catalog/queries";
@@ -145,15 +144,7 @@ export default async function ProdutosPage({ searchParams }: Props) {
                 >
                   <div className="grid gap-4 p-4 sm:grid-cols-[120px_1fr]">
                     <div className="overflow-hidden rounded-md border border-slate-200">
-                      {product.imageUrl ? (
-                        <img
-                          alt={product.name}
-                          className="aspect-[4/3] w-full object-cover"
-                          src={product.imageUrl}
-                        />
-                      ) : (
-                        <ProductImageFallback name={product.name} />
-                      )}
+                      <PublicProductImage alt={product.name} name={product.name} src={product.imageUrl} />
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
