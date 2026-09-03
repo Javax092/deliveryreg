@@ -46,27 +46,27 @@ export function PublicProductCard({
       >
         <PublicProductImage
           alt={product.name}
-          className="h-full min-h-[156px] min-[430px]:aspect-[4/3] min-[430px]:h-auto min-[430px]:min-h-0 sm:aspect-[5/4]"
+          className="h-full min-h-[148px] min-[430px]:aspect-[5/3] min-[430px]:h-auto min-[430px]:min-h-0 sm:aspect-video"
           name={product.name}
           priority={priority}
           src={product.imageUrl}
         />
       </Link>
-      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-3.5">
+      <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--text-muted)]">
           {categoryName}
         </p>
-        <Link className="mt-1 block rounded-sm" href={productHref}>
-          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-[var(--text-primary)]">
+        <Link className="mt-0.5 block rounded-sm" href={productHref}>
+          <h3 className="line-clamp-2 text-[15px] font-semibold leading-tight text-[var(--text-primary)] sm:text-base">
             {product.name}
           </h3>
         </Link>
         {product.description ? (
-          <p className="mt-1 line-clamp-1 text-xs leading-5 text-[var(--text-secondary)]">
+          <p className="mt-0.5 line-clamp-1 text-xs leading-4 text-[var(--text-secondary)]">
             {product.description}
           </p>
         ) : null}
-        <div className="mt-2">
+        <div className="mt-1.5">
           <p className="text-[15px] font-bold leading-tight text-[var(--success)]">
             {price
               ? formatCatalogPrice({
@@ -84,7 +84,7 @@ export function PublicProductCard({
             })}
           </p>
         </div>
-        <div className="mt-auto pt-2.5">
+        <div className="mt-auto pt-2">
           {price ? (
             <ProductCardAddButton
               basisQuantity={price.basisQuantity}

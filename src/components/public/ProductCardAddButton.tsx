@@ -161,7 +161,7 @@ export function ProductCardAddButton(props: Props) {
         </p>
       ) : null}
       <Button
-        className="min-h-10 rounded-[var(--radius-sm)] text-sm"
+        className="min-h-10 scroll-mb-28 rounded-[var(--radius-sm)] text-sm"
         fullWidth
         onClick={addToCart}
         type="button"
